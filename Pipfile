@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+playwright = "*"
+beautifulsoup4 = "*"
+html2markdown = "*"
+boto3 = "*"
+psycopg2-binary = "*"
+python-dotenv = "*"
+aiohttp = "*"
+markdown = "*"
+config = "*"
+
+[dev-packages]

@@ -1,0 +1,41 @@
+2025-02-05 14:59:01,245 - web_scraper - ERROR - Error scraping https://restos-sur-le-grill.fr/2019/09/nomicos-paris-16-chere-bonne-chere.html: BrowserType.launch: Executable doesn't exist at /home/jcrigoni/.cache/ms-playwright/chromium_headless_shell-1155/chrome-linux/headless_shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     playwright install                                     ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+Traceback (most recent call last):
+  File "/mnt/c/Users/jcrig/Documents/Projets_data_perso/beng/scraper_healthline.py", line 79, in scrape_url
+    browser = await playwright.chromium.launch(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jcrigoni/.local/share/virtualenvs/beng-754uINuR/lib/python3.12/site-packages/playwright/async_api/_generated.py", line 14418, in launch
+    await self._impl_obj.launch(
+  File "/home/jcrigoni/.local/share/virtualenvs/beng-754uINuR/lib/python3.12/site-packages/playwright/_impl/_browser_type.py", line 95, in launch
+    Browser, from_channel(await self._channel.send("launch", params))
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jcrigoni/.local/share/virtualenvs/beng-754uINuR/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 61, in send
+    return await self._connection.wrap_api_call(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jcrigoni/.local/share/virtualenvs/beng-754uINuR/lib/python3.12/site-packages/playwright/_impl/_connection.py", line 528, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch: Executable doesn't exist at /home/jcrigoni/.cache/ms-playwright/chromium_headless_shell-1155/chrome-linux/headless_shell
+╔════════════════════════════════════════════════════════════╗
+║ Looks like Playwright was just installed or updated.       ║
+║ Please run the following command to download new browsers: ║
+║                                                            ║
+║     playwright install                                     ║
+║                                                            ║
+║ <3 Playwright Team                                         ║
+╚════════════════════════════════════════════════════════════╝
+2025-02-05 15:00:46,296 - web_scraper - INFO - Starting scrape of https://restos-sur-le-grill.fr/2019/09/nomicos-paris-16-chere-bonne-chere.html
+2025-02-05 15:00:46,298 - web_scraper - INFO - Attempting to load https://restos-sur-le-grill.fr/2019/09/nomicos-paris-16-chere-bonne-chere.html (attempt 1)
+2025-02-05 15:01:05,557 - web_scraper - INFO - Successfully scraped https://restos-sur-le-grill.fr/2019/09/nomicos-paris-16-chere-bonne-chere.html
+2025-02-05 15:02:10,422 - web_scraper - INFO - Starting scrape of https://restos-sur-le-grill.fr/2019/09/nomicos-paris-16-chere-bonne-chere.html
+2025-02-05 15:02:10,423 - web_scraper - INFO - Attempting to load https://restos-sur-le-grill.fr/2019/09/nomicos-paris-16-chere-bonne-chere.html (attempt 1)
+2025-02-05 15:02:28,587 - web_scraper - INFO - Successfully scraped https://restos-sur-le-grill.fr/2019/09/nomicos-paris-16-chere-bonne-chere.html
+2025-02-05 15:05:53,560 - web_scraper - INFO - Starting scrape of https://www.healthline.com/health/sexual-health/the-state-of-sex-education
+2025-02-05 15:05:53,561 - web_scraper - INFO - Attempting to load https://www.healthline.com/health/sexual-health/the-state-of-sex-education (attempt 1)
+2025-02-05 15:06:10,981 - web_scraper - INFO - Successfully scraped https://www.healthline.com/health/sexual-health/the-state-of-sex-education
