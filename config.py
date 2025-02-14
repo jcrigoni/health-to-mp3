@@ -24,9 +24,9 @@ SCRAPER_CONFIG = {
     # Database settings
     'DB_HOST': 'localhost',
     'DB_PORT': 5432,
-    'DB_NAME': 'travelmate',
+    'DB_NAME': 'beng',
     'DB_USER': 'jcr',
-    'DB_PASSWORD': 'travel',
+    'DB_PASSWORD': 'health',
 
     # Update frequency settings
     'UPDATE_FREQUENCY_DAYS': 30,  # Rescrape URLs every 30 days

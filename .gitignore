@@ -170,4 +170,6 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-test_output.md
+
+urls_job/
+output_data/
