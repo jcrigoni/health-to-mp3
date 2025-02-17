@@ -7,11 +7,11 @@ This project scrapes health blogs for articles and converts them into audio summ
 ## Installation
 1. Clone the repository:
     ```sh
-    git clone https://github.com/jcrigoni/health-mp3.git
+    git clone https://github.com/jcrigoni/health-to-mp3.git/
     ```
 2. Navigate to the project directory:
     ```sh
-    cd health-mp3
+    cd health-to-mp3
     ```
 3. Install the required dependencies:
     ```sh
