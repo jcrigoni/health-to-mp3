@@ -106,7 +106,13 @@ class WebScraperEngine:
                 await self._handle_cookies_popup(page)
                 
                 # Get page title
-                title = await page.title()
+                title_end = await page.title()
+
+                # Get URL Slug
+                url_slug = url.split('/')[-1]
+
+                # Concatenate URL Slug with title_end
+                title = url_slug + ' ' + title_end
 
                 # Get HTML content
                 content = await page.content()
@@ -180,32 +186,43 @@ class WebScraperEngine:
                 exc_info=True
             )
             raise
-
+           
     def _clean_markdown(self, markdown_content):
         """
-        Enhanced markdown cleaning for better readability
+        Enhanced markdown cleaning that extracts content between article tags
         """
+        # First extract content between article tags
+        pattern = r'<article[^>]*>([\s\S]*?)</article>'
+        match = re.search(pattern, markdown_content, re.DOTALL)
+        
+        if not match:
+            print("No article tags found")
+            return markdown_content  # Return original content if no article tags found
+            
+        cleaned = match.group(1)  # Get the content between article tags
+        
+        # Apply the rest of the cleaning operations on the extracted content
         # Remove multiple consecutive blank lines
         cleaned = re.sub(r'\n\s*\n', '\n\n', markdown_content)
-        
+
         # Remove HTML tags that might have survived
         cleaned = re.sub(r'<[^>]+>', '', cleaned)
-        
+
         # Remove URLs
         cleaned = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', cleaned)
-        
+
         # Remove markdown links but keep text
         cleaned = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', cleaned)
-        
+
         # Remove extra spaces
         cleaned = re.sub(r' +', ' ', cleaned)
-        
+
         # Remove lines that are just punctuation or special characters
         cleaned = re.sub(r'^\W+$\n', '', cleaned, flags=re.MULTILINE)
-        
+
         # Ensure proper paragraph spacing
         cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
-        
+
         return cleaned.strip()
 
     async def _store_metadata(self, document_id, title, url):
@@ -254,13 +271,13 @@ class WebScraperEngine:
 
 async def process_urls_from_json(json_path: str) -> None:
     """
-    Processes URLs from a JSON file containing a simple array of URLs.
-    
-    The function reads a JSON file that looks like:
-    [
-        "https://example1.com",
-        "https://example2.com"
-    ]
+    Processes URLs from a JSON file containing URLs in the format:
+    {
+        "urls": [
+            "https://example1.com",
+            "https://example2.com"
+        ]
+    }
     
     For each URL, it:
     1. Creates a scraper instance
@@ -269,14 +286,20 @@ async def process_urls_from_json(json_path: str) -> None:
     4. Stores it in the database
     5. Write the md file and store it in the directory output_data
     """
-    # Create output directory if it doesn't exist
-    output_dir = 'output_data'
+    # Create timestamp string in format like '2025_02_15_143022' (year_month_day_hourminutesecond)
+    output_timestamp = datetime.now().strftime('%Y_%m_%d_%H%M%S')
+
+    # Combine base directory name with timestamp
+    output_dir = f'output_data_{output_timestamp}'
+
+    # Create directory
     os.makedirs(output_dir, exist_ok=True)
 
     try:
         # Read the JSON file and parse it as a simple array
         with open(json_path, 'r', encoding='utf-8') as file:
-            urls = json.load(file)
+            data = json.load(file)
+            urls = data.get('urls', [])
         
         # Create a single scraper instance to reuse database connections
         scraper = WebScraperEngine()
@@ -291,9 +314,16 @@ async def process_urls_from_json(json_path: str) -> None:
                 print(f"\nStarting to process: {url}")
                 
                 # Scrape the URL and get markdown content
-                scraped_data = await scraper.scrape_url(url)
-                markdown_content = scraped_data['content']
-                document_id = scraped_data['document_id']
+                result = await scraper.scrape_url(url)
+                
+                # If scrape_url now returns a dictionary with content and document_id
+                if isinstance(result, dict):
+                    markdown_content = result['content']
+                    document_id = result['document_id']
+                else:
+                    # If scrape_url returns just the content
+                    markdown_content = result
+                    document_id = str(uuid.uuid4())  # Generate new ID if not provided
                 
                 # Save to file in the output directory
                 output_path = os.path.join(output_dir, f'{document_id}.md')
@@ -323,8 +353,10 @@ async def process_urls_from_json(json_path: str) -> None:
                 print(f"- {url}")
             
             # Save failed URLs to a file for later retry
-            with open('failed_urls.json', 'w') as f:
-                json.dump(failed_urls, f, indent=2)
+            failed_urls_path = os.path.join(output_dir, 'failed_urls.json')
+            failed_data = {"urls": failed_urls}
+            with open(failed_urls_path, 'w') as f:
+                json.dump(failed_data, f, indent=2)
             print("\nFailed URLs have been saved to 'failed_urls.json'")
                 
     except Exception as e:
@@ -336,7 +368,7 @@ async def main():
     Main entry point for the scraper application.
     Sets up the scraping process and handles any top-level errors.
     """
-    json_path = 'urls_job/test_articles.json'
+    json_path = 'urls_job/output_url/health_urls.json'
     
     try:
         print("Starting the scraping process...")
