@@ -174,3 +174,4 @@ cython_debug/
 logs/
 output_*/
 config_*
+config.py
