@@ -14,5 +14,8 @@ aiohttp = "*"
 markdown = "*"
 config = "*"
 requests = "*"
+transformers = "*"
+tensorflow = "*"
+tf-keras = "*"
 
 [dev-packages]
