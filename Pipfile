@@ -17,5 +17,9 @@ requests = "*"
 transformers = "*"
 tensorflow = "*"
 tf-keras = "*"
+torch = "*"
+torchvision = "*"
+torchaudio = "*"
+sentencepiece = "*"
 
 [dev-packages]
