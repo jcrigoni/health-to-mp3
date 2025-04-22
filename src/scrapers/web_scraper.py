@@ -1,30 +1,32 @@
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup, Comment
-from config import SCRAPER_CONFIG
 from datetime import datetime
 import html2markdown
 import json
-from logger_setup import setup_logger
 import markdown
 import os
-from playwright.async_api import async_playwright
-import psycopg2
-from psycopg2.extras import RealDictCursor
 import re
 import uuid
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from playwright.async_api import async_playwright
+
+from src.config import config
+from src.utils import setup_logger
 
 
-class WebScraperEngine:
+class WebScraper:
     def __init__(self):
         self.logger = setup_logger('web_scraper')
+        self.scraper_config = config.SCRAPER_CONFIG
         
         self.db_conn = psycopg2.connect(
-            host=SCRAPER_CONFIG['DB_HOST'],
-            port=SCRAPER_CONFIG['DB_PORT'],
-            dbname=SCRAPER_CONFIG['DB_NAME'],
-            user=SCRAPER_CONFIG['DB_USER'],
-            password=SCRAPER_CONFIG['DB_PASSWORD']
+            host=self.scraper_config['DB_HOST'],
+            port=self.scraper_config['DB_PORT'],
+            dbname=self.scraper_config['DB_NAME'],
+            user=self.scraper_config['DB_USER'],
+            password=self.scraper_config['DB_PASSWORD']
         )
         self.last_request_time = {}
         
@@ -33,28 +35,28 @@ class WebScraperEngine:
         now = datetime.now().timestamp()
         if domain in self.last_request_time:
             time_passed = now - self.last_request_time[domain]
-            if time_passed < SCRAPER_CONFIG['DELAY_BETWEEN_REQUESTS']:
+            if time_passed < self.scraper_config['DELAY_BETWEEN_REQUESTS']:
                 await asyncio.sleep(
-                    SCRAPER_CONFIG['DELAY_BETWEEN_REQUESTS'] - time_passed
+                    self.scraper_config['DELAY_BETWEEN_REQUESTS'] - time_passed
                 )
         self.last_request_time[domain] = now
 
     async def _handle_page_load(self, page, url):
         """Handles page loading with retries"""
-        for attempt in range(SCRAPER_CONFIG['MAX_RETRIES']):
+        for attempt in range(self.scraper_config['MAX_RETRIES']):
             try:
                 self.logger.info(f"Attempting to load {url} (attempt {attempt + 1})")
                 await page.goto(
                     url, 
-                    timeout=SCRAPER_CONFIG['PAGE_LOAD_TIMEOUT']
+                    timeout=self.scraper_config['PAGE_LOAD_TIMEOUT']
                 )
                 return True
             except Exception as e:
                 self.logger.error(
                     f"Failed to load {url} on attempt {attempt + 1}: {str(e)}"
                 )
-                if attempt < SCRAPER_CONFIG['MAX_RETRIES'] - 1:
-                    await asyncio.sleep(SCRAPER_CONFIG['RETRY_DELAY'])
+                if attempt < self.scraper_config['MAX_RETRIES'] - 1:
+                    await asyncio.sleep(self.scraper_config['RETRY_DELAY'])
                 else:
                     return False
 
@@ -86,10 +88,10 @@ class WebScraperEngine:
         try:
             async with async_playwright() as playwright:
                 browser = await playwright.chromium.launch(
-                    headless=SCRAPER_CONFIG['HEADLESS']
+                    headless=self.scraper_config['HEADLESS']
                 )
                 context = await browser.new_context(
-                    user_agent=SCRAPER_CONFIG['USER_AGENT']
+                    user_agent=self.scraper_config['USER_AGENT']
                 )
                 page = await context.new_page()
                 
@@ -127,8 +129,9 @@ class WebScraperEngine:
                 
                 await browser.close()
                 return {
-                'content': markdown_content,
-                'document_id': document_id
+                    'content': markdown_content,
+                    'document_id': document_id,
+                    'title': title
                 }
                 
         except Exception as e:
@@ -196,14 +199,15 @@ class WebScraperEngine:
         match = re.search(pattern, markdown_content, re.DOTALL)
         
         if not match:
-            print("No article tags found")
-            return markdown_content  # Return original content if no article tags found
+            self.logger.debug("No article tags found")
+            # Return original content if no article tags found
+            cleaned = markdown_content
+        else:
+            cleaned = match.group(1)  # Get the content between article tags
             
-        cleaned = match.group(1)  # Get the content between article tags
-        
-        # Apply the rest of the cleaning operations on the extracted content
+        # Apply the rest of the cleaning operations
         # Remove multiple consecutive blank lines
-        cleaned = re.sub(r'\n\s*\n', '\n\n', markdown_content)
+        cleaned = re.sub(r'\n\s*\n', '\n\n', cleaned)
 
         # Remove HTML tags that might have survived
         cleaned = re.sub(r'<[^>]+>', '', cleaned)
@@ -232,7 +236,7 @@ class WebScraperEngine:
         try:
             with self.db_conn.cursor() as cursor:
                 insert_query = """
-                    INSERT INTO health (
+                    INSERT INTO scraped_pages (
                         id, title, url, created_at
                     ) VALUES (%s, %s, %s, %s)
                 """
@@ -269,32 +273,19 @@ class WebScraperEngine:
             self.db_conn.close()
 
 
-async def process_urls_from_json(json_path: str) -> None:
+async def process_urls_from_json(json_path, output_dir=None):
     """
-    Processes URLs from a JSON file containing URLs in the format:
-    {
-        "urls": [
-            "https://example1.com",
-            "https://example2.com"
-        ]
-    }
+    Processes URLs from a JSON file containing URLs
+    """
+    # Create output directory with timestamp if not provided
+    if output_dir is None:
+        output_dir = config.get_output_dir()
     
-    For each URL, it:
-    1. Creates a scraper instance
-    2. Scrapes the content
-    3. Converts it to markdown
-    4. Stores it in the database
-    5. Write the md file and store it in the directory output_data
-    """
-    # Create timestamp string in format like '2025_02_15_143022' (year_month_day_hourminutesecond)
-    output_timestamp = datetime.now().strftime('%Y_%m_%d_%H%M%S')
-
-    # Combine base directory name with timestamp
-    output_dir = f'output_data_{output_timestamp}'
-
     # Create directory
     os.makedirs(output_dir, exist_ok=True)
-
+    
+    logger = setup_logger('url_processor')
+    
     try:
         # Read the JSON file and parse it as a simple array
         with open(json_path, 'r', encoding='utf-8') as file:
@@ -302,7 +293,7 @@ async def process_urls_from_json(json_path: str) -> None:
             urls = data.get('urls', [])
         
         # Create a single scraper instance to reuse database connections
-        scraper = WebScraperEngine()
+        scraper = WebScraper()
         
         # Keep track of successful and failed URLs
         successful_urls = []
@@ -311,72 +302,54 @@ async def process_urls_from_json(json_path: str) -> None:
         # Process each URL in the array
         for url in urls:
             try:
-                print(f"\nStarting to process: {url}")
+                logger.info(f"Starting to process: {url}")
                 
                 # Scrape the URL and get markdown content
                 result = await scraper.scrape_url(url)
                 
-                # If scrape_url now returns a dictionary with content and document_id
-                if isinstance(result, dict):
-                    markdown_content = result['content']
-                    document_id = result['document_id']
-                else:
-                    # If scrape_url returns just the content
-                    markdown_content = result
-                    document_id = str(uuid.uuid4())  # Generate new ID if not provided
+                markdown_content = result['content']
+                document_id = result['document_id']
                 
                 # Save to file in the output directory
                 output_path = os.path.join(output_dir, f'{document_id}.md')
                 with open(output_path, 'w', encoding='utf-8') as f:
                     f.write(markdown_content)
 
-                print(f"Successfully processed {url}")
+                logger.info(f"Successfully processed {url}")
                 
                 successful_urls.append(url)
                 
                 # Add a polite delay between requests
-                await asyncio.sleep(SCRAPER_CONFIG.get('DELAY_BETWEEN_REQUESTS', 5))
+                await asyncio.sleep(config.SCRAPER_CONFIG.get('DELAY_BETWEEN_REQUESTS', 3))
                 
             except Exception as e:
-                print(f"Error processing {url}: {str(e)}")
+                logger.error(f"Error processing {url}: {str(e)}")
                 failed_urls.append(url)
                 continue
                 
         # Print summary at the end
-        print("\nScraping Summary:")
-        print(f"Successfully processed: {len(successful_urls)} URLs")
-        print(f"Failed to process: {len(failed_urls)} URLs")
+        logger.info("\nScraping Summary:")
+        logger.info(f"Successfully processed: {len(successful_urls)} URLs")
+        logger.info(f"Failed to process: {len(failed_urls)} URLs")
         
         if failed_urls:
-            print("\nFailed URLs:")
+            logger.info("\nFailed URLs:")
             for url in failed_urls:
-                print(f"- {url}")
+                logger.info(f"- {url}")
             
             # Save failed URLs to a file for later retry
             failed_urls_path = os.path.join(output_dir, 'failed_urls.json')
             failed_data = {"urls": failed_urls}
             with open(failed_urls_path, 'w') as f:
                 json.dump(failed_data, f, indent=2)
-            print("\nFailed URLs have been saved to 'failed_urls.json'")
+            logger.info("\nFailed URLs have been saved to 'failed_urls.json'")
+            
+        return {
+            "output_dir": output_dir,
+            "successful": len(successful_urls),
+            "failed": len(failed_urls)
+        }
                 
     except Exception as e:
-        print(f"Error reading JSON file: {str(e)}")
+        logger.error(f"Error reading JSON file: {str(e)}")
         raise
-
-async def main():
-    """
-    Main entry point for the scraper application.
-    Sets up the scraping process and handles any top-level errors.
-    """
-    json_path = 'urls_job/output_url/health_urls.json'
-    
-    try:
-        print("Starting the scraping process...")
-        await process_urls_from_json(json_path)
-        print("\nScraping process completed!")
-        
-    except Exception as e:
-        print(f"A critical error occurred: {str(e)}")
-
-if __name__ == "__main__":
-    asyncio.run(main())

@@ -170,8 +170,11 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-
+settings.py
 logs/
+*.log
 output_*/
 config_*
 config.py
+CLAUDE.md
+pipeline*/
