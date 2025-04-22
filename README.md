@@ -15,7 +15,7 @@ A complete pipeline for scraping health blogs, summarizing content, and converti
 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/health-mp3.git
+git clone https://github.com/jcrigoni/health-mp3.git
 cd health-mp3
 ```
 
@@ -42,12 +42,12 @@ The project provides a comprehensive CLI:
 python main.py crawl --site example.com --start-url https://example.com/ --max-pages 100
 
 # Scrape content from URLs
-python main.py scrape --urls-file urls_job/output_url/example_urls.json 
+python main.py scrape --urls-file pipeline_20250422_150845/urls/urls.json 
 
 # Summarize markdown content
-python main.py summarize --input-dir output_data_20250411_105443
+python main.py summarize --input-dir output_data_2025_04_11_105443
 
-# Translate content to French
+# Translate content to "Language"
 python main.py translate --input-dir summaries --pattern "*.txt"
 
 # Run the complete pipeline (crawl, scrape, translate)
