@@ -1,5 +1,6 @@
-# This bash script will delete all markdown files in the current directory
-# that contain less than 100 words.
+#!/bin/bash
+
+# This script deletes markdown files with less than 100 words
 
 for file in *.md; do                                                            
   word_count=$(wc -w < "$file")
