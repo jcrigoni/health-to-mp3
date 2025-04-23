@@ -5,5 +5,5 @@
 for file in *.md; do                                                            
   word_count=$(wc -w < "$file")
   if [ "$word_count" -lt 100 ]; then
-    echo "Suppression de $file ($word_count mots)"
+    echo "Delete $file ($word_count words)"
     rm "$file"
