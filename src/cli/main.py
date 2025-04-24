@@ -13,11 +13,12 @@ from src.processors.translator import Translator, translate_directory
 
 
 def setup_parser():
-    parser = argparse.ArgumentParser(description='Health Article Processing Toolkit')
+    parser = argparse.ArgumentParser(description='Article Processing Toolkit')
     parser.add_argument('--version', action='version', version='Health-MP3 1.0.0')
     subparsers = parser.add_subparsers(dest='command', help='Command to run')
     
-    # Crawler command
+    # Crawler command 
+
     crawler_parser = subparsers.add_parser('crawl', help='Crawl a website for URLs')
     crawler_parser.add_argument('--site', default=config.CRAWLER_CONFIG['SITE_PATH'], help='Site to crawl')
     crawler_parser.add_argument('--start-url', default=config.CRAWLER_CONFIG['START_URL'], help='Starting URL')
@@ -64,11 +65,11 @@ Available Commands:
   pipeline   - Run complete pipeline (crawl, scrape, translate)
 
 Examples:
-  python main.py crawl --site example.com --start-url https://example.com/ --max-pages 100
-  python main.py scrape --urls-file urls_job/output_url/urls.json
-  python main.py translate --input-dir content_dir --output-dir translations
-  python main.py summarize --input-dir content_dir --output-dir summaries
-  python main.py pipeline --site example.com --start-url https://example.com/
+  python3 main.py crawl --site example.com --start-url https://example.com/ --max-pages 100
+  python3 main.py scrape --urls-file urls_job/output_url/urls.json
+  python3 main.py translate --input-dir content_dir --output-dir translations
+  python3 main.py summarize --input-dir content_dir --output-dir summaries
+  python3 main.py pipeline --site example.com --start-url https://example.com/
 
 For detailed help on any command:
   python main.py <command> --help
