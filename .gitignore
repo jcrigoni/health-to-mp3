@@ -178,3 +178,6 @@ config_*
 config.py
 CLAUDE.md
 pipeline*/
+data/
+data_*/
+audio_files*/

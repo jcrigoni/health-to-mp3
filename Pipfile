@@ -21,5 +21,9 @@ torch = "*"
 torchvision = "*"
 torchaudio = "*"
 sentencepiece = "*"
+kokoro = "*"
+soundfile = "*"
+pydub = "*"
+
 
 [dev-packages]
